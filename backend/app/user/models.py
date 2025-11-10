@@ -5,6 +5,7 @@ import datetime
 import jwt
 import smtplib
 from email.message import EmailMessage
+from email.mime.text import MIMEText
 from pymongo import MongoClient
 
 # MongoDB Configuration
@@ -71,7 +72,7 @@ class User:
             algorithm="HS256"
         )
         
-        reset_link = url_for("reset_password", _external=True) + f"?token={token}"
+        reset_link = f"http://127.0.0.1:5000/user/reset?token={token}"
         
         # Send reset email (using SMTP)
         if self.send_reset_email(user["email"], reset_link):
@@ -79,6 +80,7 @@ class User:
         else:
             return jsonify({"error": "Failed to send email"}), 500
 
+    # @user_bp.route('/reset_password', methods=['POST'], endpoint='reset_password')
     def reset_password(self):
         token = request.args.get("token")
         data = request.json
@@ -101,19 +103,26 @@ class User:
         return jsonify({"message": "Password reset successful"}), 200
 
     def send_reset_email(self, recipient_email, reset_link):
+        EMAIL_ADDRESS = "heartechoproject@gmail.com"
+        EMAIL_PASSWORD = "zrjh qykz reuq kpcr"
+        TO_EMAIL = recipient_email
+
+        subject = "Heartecho - Password Reset Request"
+        body = f"Click the link to reset your password:\n\n{reset_link}"
+
+        msg = MIMEText(body)
+        msg['From'] = EMAIL_ADDRESS
+        msg['To'] = TO_EMAIL
+        msg['Subject'] = subject
+
         try:
-            EMAIL_ADDRESS = "your_email@example.com"
-            EMAIL_PASSWORD = "your_email_password"
-
-            msg = EmailMessage()
-            msg["Subject"] = "Password Reset Request"
-            msg["From"] = EMAIL_ADDRESS
-            msg["To"] = recipient_email
-            msg.set_content(f"Click the link to reset your password: {reset_link}")
-
-            with smtplib.SMTP_SSL("smtp.example.com", 465) as server:
+            # Connect to Gmail’s SMTP server (TLS)
+            with smtplib.SMTP("smtp.gmail.com", 587) as server:
+                server.ehlo()  # Can be omitted, but good practice
+                server.starttls()  # Upgrade the connection to secure TLS
                 server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
                 server.send_message(msg)
+                print("Email sent successfully!")
 
             return True
         except Exception as e:
