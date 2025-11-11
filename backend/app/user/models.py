@@ -72,7 +72,7 @@ class User:
             algorithm="HS256"
         )
         
-        reset_link = f"http://127.0.0.1:5000/user/reset?token={token}"
+        reset_link = f"http://localhost:5173/reset-password?token={token}"
         
         # Send reset email (using SMTP)
         if self.send_reset_email(user["email"], reset_link):
@@ -82,7 +82,7 @@ class User:
 
     # @user_bp.route('/reset_password', methods=['POST'], endpoint='reset_password')
     def reset_password(self):
-        token = request.args.get("token")
+        token = request.json.get("token")
         data = request.json
 
         try:
