@@ -52,12 +52,12 @@ class Post:
 
     def get_user_posts(self, user_email):
         """ Get all posts of the logged-in user """
-        posts = list(db.posts.find({"user_email": user_email}, {"_id": 1, "content": 1, "created_at": 1}))
+        posts = list(db.posts.find({"user_email": user_email}).sort("created_at", -1))
         return jsonify({"posts": posts}), 200
 
     def get_news_feed(self):
         """ Get posts from all users sorted by latest """
-        posts = list(db.posts.find({}, {"_id": 1, "user_email": 1, "content": 1, "created_at": 1}).sort("created_at", -1))
+        posts = list(db.posts.find({}).sort("created_at", -1))
         return jsonify({"news_feed": posts}), 200
 
 class Comment:
