@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import Notifications from "./Notifications";
-import "../styles/Profile.css";
+import "../styles/NewsFeed.css";
 
 interface Comment {
   _id: string;
