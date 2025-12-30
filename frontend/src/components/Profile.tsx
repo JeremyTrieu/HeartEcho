@@ -7,6 +7,7 @@ import "../styles/Profile.css";
 interface Comment {
   _id: string;
   user_email: string;
+  username?: string;
   content: string;
   created_at: string;
 }
@@ -14,6 +15,7 @@ interface Comment {
 interface Post {
   _id: string;
   user_email: string;
+  username?: string;
   content: string;
   created_at: string;
   hearts?: number;
@@ -31,6 +33,8 @@ interface Notification {
   message: string;
   timestamp: Date;
   post_id?: string;
+  from_user?: string;
+  read: boolean;
 }
 
 const Profile: React.FC = () => {
@@ -47,35 +51,71 @@ const Profile: React.FC = () => {
     const [showComments, setShowComments] = useState<{ [key: string]: boolean }>({});
     const [reactedPosts, setReactedPosts] = useState<Set<string>>(new Set());
     const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [showNotifications, setShowNotifications] = useState<boolean>(true);
+    const [isNotificationOpen, setIsNotificationOpen] = useState<boolean>(false);
+    const [unreadCount, setUnreadCount] = useState<number>(0);
   
-    if (!authContext) return null; // Ensure context is available
+    if (!authContext) return null;
     const { user, logout } = authContext;
 
-    // Helper function to add notification
-    const addNotification = (type: 'reaction' | 'comment', message: string, post_id?: string) => {
-      const newNotification: Notification = {
-        _id: Date.now().toString() + Math.random(),
-        type,
-        message,
-        timestamp: new Date(),
-        post_id
-      };
-      setNotifications(prev => [newNotification, ...prev]);
+    // Fetch notifications from backend
+    const fetchNotifications = async () => {
+      try {
+        const response = await fetch("http://127.0.0.1:5000/notifications/get", {
+          headers: { "User-Email": user?.email || "" },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setNotifications(data.notifications || []);
+          setUnreadCount(data.notifications.filter((n: Notification) => !n.read).length);
+        }
+      } catch (err) {
+        console.error("Failed to fetch notifications:", err);
+      }
     };
 
-    // Helper function to remove notification
-    const removeNotification = (id: string) => {
-      setNotifications(prev => prev.filter(n => n._id !== id));
+    // Mark notification as read
+    const handleMarkAsRead = async (notificationId: string) => {
+      try {
+        const response = await fetch(`http://127.0.0.1:5000/notifications/mark-read/${notificationId}`, {
+          method: "POST",
+          headers: { "User-Email": user?.email || "" },
+        });
+
+        if (response.ok) {
+          setNotifications(prev => 
+            prev.map(n => n._id === notificationId ? { ...n, read: true } : n)
+          );
+          setUnreadCount(prev => Math.max(0, prev - 1));
+        }
+      } catch (err) {
+        console.error("Failed to mark notification as read:", err);
+      }
     };
 
-    // Helper function to clear all notifications
-    const clearAllNotifications = () => {
-      setNotifications([]);
+    // Clear all notifications
+    const handleClearAllNotifications = async () => {
+      try {
+        const response = await fetch("http://127.0.0.1:5000/notifications/clear-all", {
+          method: "DELETE",
+          headers: { "User-Email": user?.email || "" },
+        });
+
+        if (response.ok) {
+          setNotifications([]);
+          setUnreadCount(0);
+        }
+      } catch (err) {
+        console.error("Failed to clear notifications:", err);
+      }
+    };
+
+    // Toggle notification dropdown
+    const handleToggleNotifications = () => {
+      setIsNotificationOpen(prev => !prev);
     };
   
     useEffect(() => {
-        console.log(user);
       const fetchUserProfile = async () => {
         if (!user?.email) {
           setError("User email is not available");
@@ -126,10 +166,15 @@ const Profile: React.FC = () => {
         }
       };
   
-      setLoading(true); // Start loading when useEffect runs
+      setLoading(true);
   
       fetchUserProfile();
       fetchUserPosts();
+      fetchNotifications();
+
+      // Poll for new notifications every 30 seconds
+      const intervalId = setInterval(fetchNotifications, 30000);
+      return () => clearInterval(intervalId);
     }, [user]);
   
     const handleCreatePost = async (e: React.FormEvent) => {
@@ -159,12 +204,10 @@ const Profile: React.FC = () => {
   
         const data = await response.json();
         
-        // Add the new post to the beginning of the posts array
         setPosts([data.post, ...posts]);
-        setNewPostContent(""); // Clear the textarea
+        setNewPostContent("");
         setSubmitMessage("Post created successfully!");
         
-        // Clear success message after 3 seconds
         setTimeout(() => {
           setSubmitMessage(null);
         }, 3000);
@@ -207,27 +250,14 @@ const Profile: React.FC = () => {
           throw new Error("Failed to react to post");
         }
 
-        // Update local state
         setPosts(posts.map(post => {
           if (post._id === postId) {
             const newHearts = (post.hearts || 0) + (reactedPosts.has(postId) ? -1 : 1);
-            const isAdding = !reactedPosts.has(postId);
-            
-            // Add notification
-            if (isAdding) {
-              addNotification(
-                'reaction',
-                `You reacted 💚 to your own post`,
-                postId
-              );
-            }
-            
             return { ...post, hearts: newHearts };
           }
           return post;
         }));
 
-        // Toggle reacted state
         setReactedPosts(prev => {
           const newSet = new Set(prev);
           if (newSet.has(postId)) {
@@ -262,14 +292,6 @@ const Profile: React.FC = () => {
 
         const data = await response.json();
         
-        // Add notification
-        addNotification(
-          'comment',
-          `You commented on your post: "${content.substring(0, 30)}${content.length > 30 ? '...' : ''}"`,
-          postId
-        );
-        
-        // Update local state
         setPosts(posts.map(post => {
           if (post._id === postId) {
             return {
@@ -280,7 +302,6 @@ const Profile: React.FC = () => {
           return post;
         }));
 
-        // Clear input
         setCommentInputs({ ...commentInputs, [postId]: "" });
       } catch (err) {
         alert((err as Error).message);
@@ -305,7 +326,6 @@ const Profile: React.FC = () => {
           throw new Error("Failed to delete comment");
         }
 
-        // Update local state
         setPosts(posts.map(post => {
           if (post._id === postId) {
             return {
@@ -334,17 +354,8 @@ const Profile: React.FC = () => {
   
     return (
       <div className="profile-container">
-        {/* Notifications Box */}
-        {showNotifications && notifications.length > 0 && (
-          <Notifications
-            notifications={notifications}
-            onClose={removeNotification}
-            onClearAll={clearAllNotifications}
-          />
-        )}
-        
         <div className="profile-wrapper">
-          {/* Header with Logo */}
+          {/* Header with Logo and Notifications */}
           <div className="profile-header">
             <div className="heartecho-branding">
               <div className="heartecho-logo">
@@ -356,6 +367,14 @@ const Profile: React.FC = () => {
             </div>
             
             <div className="header-actions">
+              <Notifications
+                notifications={notifications}
+                isOpen={isNotificationOpen}
+                onToggle={handleToggleNotifications}
+                onMarkAsRead={handleMarkAsRead}
+                onClearAll={handleClearAllNotifications}
+                unreadCount={unreadCount}
+              />
               <button 
                 onClick={() => {navigate("/newsfeed")}} 
                 className="btn-secondary"
@@ -439,9 +458,8 @@ const Profile: React.FC = () => {
               <ul className="posts-list">
                 {posts.map((post) => (
                   <li key={post._id} className="post-card">
-                    {/* Post Header */}
                     <div className="post-header">
-                      <span className="post-author">{post.user_email}</span>
+                      <span className="post-author">{post.username || post.user_email}</span>
                       <div className="post-actions">
                         <button
                           onClick={() => handleDeletePost(post._id)}
@@ -452,10 +470,8 @@ const Profile: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Post Content */}
                     <p className="post-content">{post.content}</p>
 
-                    {/* Post Footer */}
                     <div className="post-footer">
                       <p className="post-date">
                         {new Date(post.created_at).toLocaleString()}
@@ -481,7 +497,6 @@ const Profile: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Comments Section */}
                     {showComments[post._id] && (
                       <div className="comments-section">
                         {post.comments && post.comments.length > 0 && (
@@ -490,7 +505,7 @@ const Profile: React.FC = () => {
                               <li key={comment._id} className="comment-item">
                                 <div className="comment-header">
                                   <span className="comment-author">
-                                    {comment.user_email}
+                                    {comment.username || comment.user_email}
                                   </span>
                                   {comment.user_email === user?.email && (
                                     <button
@@ -510,7 +525,6 @@ const Profile: React.FC = () => {
                           </ul>
                         )}
                         
-                        {/* Add Comment Form */}
                         <div className="add-comment-form">
                           <input
                             type="text"

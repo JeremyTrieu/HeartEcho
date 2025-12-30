@@ -16,12 +16,13 @@ db = client["heart_echo_db"]  # Reference database
 
 # Routes
 from user.routes import user_bp
-from post_comment.routes import post_bp, comment_bp
+from post_comment.routes import post_bp, comment_bp, notification_bp
 
 # Register Blueprints
 app.register_blueprint(user_bp, url_prefix="/user")
 app.register_blueprint(post_bp, url_prefix="/post")
 app.register_blueprint(comment_bp, url_prefix="/comment")
+app.register_blueprint(notification_bp, url_prefix="/notification")
 
 @app.route('/')
 def home():

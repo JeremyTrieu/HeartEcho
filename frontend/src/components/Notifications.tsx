@@ -7,55 +7,96 @@ interface Notification {
   message: string;
   timestamp: Date;
   post_id?: string;
+  from_user?: string;
+  read: boolean;
 }
 
 interface NotificationsProps {
   notifications: Notification[];
-  onClose: (id: string) => void;
+  isOpen: boolean;
+  onToggle: () => void;
+  onMarkAsRead: (id: string) => void;
   onClearAll: () => void;
+  unreadCount: number;
 }
 
-const Notifications: React.FC<NotificationsProps> = ({ notifications, onClose, onClearAll }) => {
-  if (notifications.length === 0) {
-    return null;
-  }
-
+const Notifications: React.FC<NotificationsProps> = ({ 
+  notifications, 
+  isOpen, 
+  onToggle, 
+  onMarkAsRead,
+  onClearAll,
+  unreadCount 
+}) => {
   return (
-    <div className="notifications-container">
-      <div className="notifications-header">
-        <h3 className="notifications-title">
-          🔔 Notifications ({notifications.length})
-        </h3>
-        {notifications.length > 0 && (
-          <button onClick={onClearAll} className="btn-clear-all">
-            Clear All
-          </button>
+    <div className="notification-mailbox">
+      {/* Mailbox Icon Button */}
+      <button 
+        className="mailbox-btn" 
+        onClick={onToggle}
+        aria-label="Notifications"
+      >
+        <svg 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="currentColor" 
+          strokeWidth="2"
+          className="mailbox-icon"
+        >
+          <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+        {unreadCount > 0 && (
+          <span className="notification-badge">{unreadCount}</span>
         )}
-      </div>
-      <ul className="notifications-list">
-        {notifications.map((notification) => (
-          <li key={notification._id} className={`notification-item ${notification.type}`}>
-            <div className="notification-content">
-              <span className="notification-icon">
-                {notification.type === 'reaction' ? '💚' : '💬'}
-              </span>
-              <div className="notification-text">
-                <p className="notification-message">{notification.message}</p>
-                <span className="notification-time">
-                  {getTimeAgo(notification.timestamp)}
-                </span>
-              </div>
+      </button>
+
+      {/* Dropdown Panel */}
+      {isOpen && (
+        <div className="notifications-dropdown">
+          <div className="notifications-header">
+            <h3 className="notifications-title">
+              📬 Notifications
+            </h3>
+            {notifications.length > 0 && (
+              <button onClick={onClearAll} className="btn-clear-all">
+                Clear All
+              </button>
+            )}
+          </div>
+          
+          {notifications.length === 0 ? (
+            <div className="notifications-empty">
+              <p>No notifications yet</p>
             </div>
-            <button
-              onClick={() => onClose(notification._id)}
-              className="btn-close-notification"
-              aria-label="Close notification"
-            >
-              ✕
-            </button>
-          </li>
-        ))}
-      </ul>
+          ) : (
+            <ul className="notifications-list">
+              {notifications.map((notification) => (
+                <li 
+                  key={notification._id} 
+                  className={`notification-item ${notification.type} ${notification.read ? 'read' : 'unread'}`}
+                  onClick={() => onMarkAsRead(notification._id)}
+                >
+                  <div className="notification-content">
+                    <span className="notification-icon">
+                      {notification.type === 'reaction' ? '💚' : '💬'}
+                    </span>
+                    <div className="notification-text">
+                      <p className="notification-message">{notification.message}</p>
+                      {notification.from_user && (
+                        <span className="notification-from">from {notification.from_user}</span>
+                      )}
+                      <span className="notification-time">
+                        {getTimeAgo(notification.timestamp)}
+                      </span>
+                    </div>
+                  </div>
+                  {!notification.read && <span className="unread-dot"></span>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </div>
   );
 };
