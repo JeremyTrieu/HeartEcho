@@ -22,10 +22,6 @@ interface Post {
   comments?: Comment[];
 }
 
-interface ProfileData {
-  email: string;
-  username: string;
-}
 
 interface Notification {
   _id: string;
@@ -60,7 +56,7 @@ const Profile: React.FC = () => {
     // Fetch notifications from backend
     const fetchNotifications = async () => {
       try {
-        const response = await fetch("http://127.0.0.1:5000/notifications/get", {
+        const response = await fetch("/notification/get", {
           headers: { "User-Email": user?.email || "" },
         });
 
@@ -77,7 +73,7 @@ const Profile: React.FC = () => {
     // Mark notification as read
     const handleMarkAsRead = async (notificationId: string) => {
       try {
-        const response = await fetch(`http://127.0.0.1:5000/notifications/mark-read/${notificationId}`, {
+        const response = await fetch(`/notification/mark-read/${notificationId}`, {
           method: "POST",
           headers: { "User-Email": user?.email || "" },
         });
@@ -96,7 +92,7 @@ const Profile: React.FC = () => {
     // Clear all notifications
     const handleClearAllNotifications = async () => {
       try {
-        const response = await fetch("http://127.0.0.1:5000/notifications/clear-all", {
+        const response = await fetch("/notification/clear-all", {
           method: "DELETE",
           headers: { "User-Email": user?.email || "" },
         });
@@ -124,7 +120,7 @@ const Profile: React.FC = () => {
         }
   
         try {
-          const response = await fetch("http://127.0.0.1:5000/user/profile", {
+          const response = await fetch("/user/profile", {
             headers: { "User-Email": user.email || "" },
           });
   
@@ -149,7 +145,7 @@ const Profile: React.FC = () => {
         }
   
         try {
-          const response = await fetch("http://127.0.0.1:5000/post/my-posts", {
+          const response = await fetch("/post/my-posts", {
             headers: { "User-Email": user.email || "" },
           });
   
@@ -189,7 +185,7 @@ const Profile: React.FC = () => {
       setSubmitMessage(null);
   
       try {
-        const response = await fetch("http://127.0.0.1:5000/post/create", {
+        const response = await fetch("/post/create", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -224,7 +220,7 @@ const Profile: React.FC = () => {
       }
 
       try {
-        const response = await fetch(`http://127.0.0.1:5000/post/delete/${postId}`, {
+        const response = await fetch(`/post/delete/${postId}`, {
           method: "DELETE",
           headers: { "User-Email": user?.email || "" },
         });
@@ -241,7 +237,7 @@ const Profile: React.FC = () => {
 
     const handleReact = async (postId: string) => {
       try {
-        const response = await fetch(`http://127.0.0.1:5000/comment/react/${postId}/love`, {
+        const response = await fetch(`/comment/react/${postId}/love`, {
           method: "POST",
           headers: { "User-Email": user?.email || "" },
         });
@@ -277,7 +273,7 @@ const Profile: React.FC = () => {
       if (!content) return;
 
       try {
-        const response = await fetch(`http://127.0.0.1:5000/comment/add/${postId}`, {
+        const response = await fetch(`/comment/add/${postId}`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -315,7 +311,7 @@ const Profile: React.FC = () => {
 
       try {
         const response = await fetch(
-          `http://127.0.0.1:5000/comment/delete/${postId}/${commentId}`,
+          `/comment/delete/${postId}/${commentId}`,
           {
             method: "DELETE",
             headers: { "User-Email": user?.email || "" },
@@ -459,7 +455,7 @@ const Profile: React.FC = () => {
                 {posts.map((post) => (
                   <li key={post._id} className="post-card">
                     <div className="post-header">
-                      <span className="post-author">{post.username || post.user_email}</span>
+                      <span className="post-author">{post.username || "Anonymous"}</span>
                       <div className="post-actions">
                         <button
                           onClick={() => handleDeletePost(post._id)}
@@ -505,7 +501,7 @@ const Profile: React.FC = () => {
                               <li key={comment._id} className="comment-item">
                                 <div className="comment-header">
                                   <span className="comment-author">
-                                    {comment.username || comment.user_email}
+                                    {comment.username || "Anonymous"}
                                   </span>
                                   {comment.user_email === user?.email && (
                                     <button

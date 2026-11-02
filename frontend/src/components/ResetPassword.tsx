@@ -25,7 +25,7 @@ export default function ResetPassword() {
     }
 
     try {
-      const response = await axios.post("http://localhost:5000/user/reset", {
+      const response = await axios.post("/user/reset", {
         token, // include the JWT token from URL
         password: data.password,
       });

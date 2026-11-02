@@ -1,0 +1,12 @@
+**/venv
+**/venvv
+**/.venv
+**/__pycache__
+**/*.pyc
+**/.env
+**/.env.*
+!**/.env.example
+.git
+.pytest_cache
+tests
+*.csv

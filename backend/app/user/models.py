@@ -4,18 +4,22 @@ import uuid
 import datetime
 import jwt
 import smtplib
+import re
 from email.message import EmailMessage
 from email.mime.text import MIMEText
 from pymongo import MongoClient
+from utils.nicknames import generate_nickname, get_nickname
+import os
 
 # MongoDB Configuration
-client = MongoClient('mongodb://localhost:27017/')  # Ensure correct hostname
+# client = MongoClient('mongodb://localhost:27017/')  # Ensure correct hostname
+mongo_uri = os.environ["MONGO_URI"]
+client = MongoClient(mongo_uri, serverSelectionTimeoutMS=5000)
 db = client["heart_echo_db"]  # Reference database
 # from app import db, app  # Import MongoDB instance and Flask app
 
 
-
-SECRET_KEY = "FOLLOW_YOUR_HEART"  # Change this to a secure secret key
+SECRET_KEY = os.environ["JWT_SECRET_KEY"]
 
 class User:
     def signup(self):
@@ -29,10 +33,11 @@ class User:
         
         if "@" not in data["email"]:
             return jsonify({"error": "Wrong email format"}), 400
-        username = data["email"].split("@")[0]
+        username = generate_nickname()
         user = {
             "_id": str(uuid.uuid4()),
             "username": username,
+            "nickname_version": 1,
             "email": data["email"],
             "password": pbkdf2_sha256.hash(data["password"])
         }
@@ -47,6 +52,8 @@ class User:
 
         if not user or not pbkdf2_sha256.verify(data["password"], user["password"]):
             return jsonify({"error": "Invalid email or password"}), 401
+
+        get_nickname(db, user["email"])
 
         # Generate JWT token (valid for 1 hour)
         token = jwt.encode(
@@ -72,7 +79,9 @@ class User:
             algorithm="HS256"
         )
         
-        reset_link = f"http://localhost:5173/reset-password?token={token}"
+        # reset_link = f"http://localhost:5173/reset-password?token={token}"
+        public_app_url = os.environ["PUBLIC_APP_URL"].rstrip("/")
+        reset_link = f"{public_app_url}/reset-password?token={token}"
         
         # Send reset email (using SMTP)
         if self.send_reset_email(user["email"], reset_link):
@@ -103,8 +112,8 @@ class User:
         return jsonify({"message": "Password reset successful"}), 200
 
     def send_reset_email(self, recipient_email, reset_link):
-        EMAIL_ADDRESS = "heartechoproject@gmail.com"
-        EMAIL_PASSWORD = "zrjh qykz reuq kpcr"
+        EMAIL_ADDRESS = os.environ["SMTP_USERNAME"]
+        EMAIL_PASSWORD = os.environ["SMTP_PASSWORD"]
         TO_EMAIL = recipient_email
 
         subject = "Heartecho - Password Reset Request"
@@ -139,4 +148,34 @@ class User:
             print("User not found in MongoDB")  # Debugging line
             return jsonify({"error": "User not found"}), 404
 
+        user["username"] = get_nickname(db, user_email)
         return jsonify(user), 200
+
+    def get_public_profile(self, username):
+        """Return a public, nickname-only profile and its diary entries."""
+        user = db.users.find_one(
+            {"username": {"$regex": f"^{re.escape(username)}$", "$options": "i"}},
+            {"_id": 0, "email": 1, "username": 1},
+        )
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        posts = list(db.posts.find({"user_email": user["email"]}).sort("created_at", -1))
+        for post in posts:
+            post.pop("user_email", None)
+            for comment in post.get("comments", []):
+                comment.pop("user_email", None)
+
+        return jsonify({"profile": {"username": user["username"]}, "posts": posts}), 200
+
+    def search_users(self, query):
+        """Search public profiles by a partial nickname."""
+        query = query.strip()
+        if not query:
+            return jsonify({"users": []}), 200
+
+        users = db.users.find(
+            {"username": {"$regex": re.escape(query), "$options": "i"}},
+            {"_id": 0, "username": 1},
+        ).sort("username", 1).limit(10)
+        return jsonify({"users": list(users)}), 200

@@ -51,7 +51,7 @@ const NewsFeed: React.FC = () => {
   // Fetch notifications from backend
   const fetchNotifications = async () => {
     try {
-      const response = await fetch("http://127.0.0.1:5000/notifications/get", {
+      const response = await fetch("/notification/get", {
         headers: { "User-Email": user?.email || "" },
       });
 
@@ -68,7 +68,7 @@ const NewsFeed: React.FC = () => {
   // Mark notification as read
   const handleMarkAsRead = async (notificationId: string) => {
     try {
-      const response = await fetch(`http://127.0.0.1:5000/notifications/mark-read/${notificationId}`, {
+      const response = await fetch(`/notification/mark-read/${notificationId}`, {
         method: "POST",
         headers: { "User-Email": user?.email || "" },
       });
@@ -87,7 +87,7 @@ const NewsFeed: React.FC = () => {
   // Clear all notifications
   const handleClearAllNotifications = async () => {
     try {
-      const response = await fetch("http://127.0.0.1:5000/notifications/clear-all", {
+      const response = await fetch("/notification/clear-all", {
         method: "DELETE",
         headers: { "User-Email": user?.email || "" },
       });
@@ -117,7 +117,7 @@ const NewsFeed: React.FC = () => {
 
   const fetchAllPosts = async () => {
     try {
-      const response = await fetch("http://127.0.0.1:5000/post/news-feed", {
+      const response = await fetch("/post/news-feed", {
         headers: { "User-Email": user?.email || "" },
       });
 
@@ -324,7 +324,7 @@ const NewsFeed: React.FC = () => {
               {posts.map((post) => (
                 <li key={post._id} className="post-card">
                   <div className="post-header">
-                    <span className="post-author">{post.username || post.user_email}</span>
+                    <span className="post-author">{post.username || "Anonymous"}</span>
                     {post.user_email === user?.email && (
                       <div className="post-actions">
                         <button
@@ -372,7 +372,7 @@ const NewsFeed: React.FC = () => {
                             <li key={comment._id} className="comment-item">
                               <div className="comment-header">
                                 <span className="comment-author">
-                                  {comment.username || comment.user_email}
+                                  {comment.username || "Anonymous"}
                                 </span>
                                 {comment.user_email === user?.email && (
                                   <button

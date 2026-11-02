@@ -1,0 +1,16 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    image: heartecho-backend:local
+    network_mode: host
+    env_file:
+      - .env
+
+  frontend:
+    build:
+      context: ./frontend
+    image: heartecho-frontend:local
+    network_mode: host
+    depends_on:
+      - backend

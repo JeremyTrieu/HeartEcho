@@ -1,21 +1,21 @@
 // src/pages/SignUp.tsx
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from "react-router-dom";
-import { AuthContext } from "../context/AuthContext";
+// import { AuthContext } from "../context/AuthContext";
 import "../styles/SignUp.css"; // Import CSS for styling
 
 const SignUp = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
-  const authContext = useContext(AuthContext);
+  // const authContext = useContext(AuthContext);
 
-  if (!authContext) return null; // Ensure context is available
-    const { login } = authContext;
+  // if (!authContext) return null; // Ensure context is available
+    // const { login } = authContext;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const response = await fetch('http://localhost:5000/user/signup', {
+    const response = await fetch('/user/signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),

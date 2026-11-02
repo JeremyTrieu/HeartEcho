@@ -4,9 +4,13 @@ import uuid
 from datetime import datetime
 
 from pymongo import MongoClient
+from utils.nicknames import get_nickname, populate_author_names
+import os
 
 # MongoDB Configuration
-client = MongoClient('mongodb://localhost:27017/')
+# client = MongoClient('mongodb://localhost:27017/')
+mongo_uri = os.environ["MONGO_URI"]
+client = MongoClient(mongo_uri, serverSelectionTimeoutMS=5000)
 db = client["heart_echo_db"]
 
 class Post:
@@ -17,8 +21,7 @@ class Post:
             return jsonify({"error": "Post content is required"}), 400
 
         # Get user's username
-        user = db.users.find_one({"email": user_email})
-        username = user.get("username") if user else user_email
+        username = get_nickname(db, user_email)
 
         post = {
             "_id": str(uuid.uuid4()),
@@ -57,12 +60,12 @@ class Post:
     def get_user_posts(self, user_email):
         """ Get all posts of the logged-in user """
         posts = list(db.posts.find({"user_email": user_email}).sort("created_at", -1))
-        return jsonify({"posts": posts}), 200
+        return jsonify({"posts": populate_author_names(db, posts)}), 200
 
     def get_news_feed(self):
         """ Get posts from all users sorted by latest """
         posts = list(db.posts.find({}).sort("created_at", -1))
-        return jsonify({"news_feed": posts}), 200
+        return jsonify({"news_feed": populate_author_names(db, posts)}), 200
 
 class Comment:
     def add_comment(self, post_id, user_email):
@@ -72,8 +75,7 @@ class Comment:
             return jsonify({"error": "Comment content is required"}), 400
 
         # Get user's username
-        user = db.users.find_one({"email": user_email})
-        username = user.get("username") if user else user_email
+        username = get_nickname(db, user_email)
 
         comment = {
             "_id": str(uuid.uuid4()),

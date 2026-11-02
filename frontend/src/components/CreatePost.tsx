@@ -6,7 +6,7 @@ const CreatePost = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const response = await fetch('http://localhost:5000/post/create', {
+    const response = await fetch('/post/create', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

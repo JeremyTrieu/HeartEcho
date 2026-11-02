@@ -13,7 +13,7 @@ const SignIn = () => {
   const { login } = authContext;
 
   const handleLogin = async (email: string, password: string) => {
-    const response = await fetch("http://localhost:5000/user/signin", {
+    const response = await fetch("/user/signin", {
       method: "POST",
       body: JSON.stringify({ email, password }),
       headers: {

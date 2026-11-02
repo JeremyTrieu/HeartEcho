@@ -1,5 +1,5 @@
 // src/pages/PostsList.tsx
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Post from '../components/Post';
 
 const PostsList = () => {
@@ -7,7 +7,7 @@ const PostsList = () => {
 
   useEffect(() => {
     const fetchPosts = async () => {
-      const response = await fetch('http://localhost:5000/post/my-posts');
+      const response = await fetch('/post/my-posts');
       const data = await response.json();
       setPosts(data);
     };
@@ -15,7 +15,7 @@ const PostsList = () => {
   }, []);
 
   const handleDeletePost = async (postId: string) => {
-    const response = await fetch(`http://localhost:5000/post/delete/${postId}`, {
+    const response = await fetch(`/post/delete/${postId}`, {
       method: 'DELETE',
     });
 

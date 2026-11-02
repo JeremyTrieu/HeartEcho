@@ -1,0 +1,24 @@
+# Local secrets and environment configuration
+.env
+.env.*
+!.env.example
+
+# Python environments and caches
+venv/
+venvv/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Frontend dependencies and build output
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Logs
+*.log
+
+# Local operating system files
+.DS_Store
+Thumbs.db

@@ -27,3 +27,12 @@ def get_user_profile():
         return jsonify({"error": "User email is required"}), 400
 
     return User().get_profile(user_email)
+
+@user_bp.route('/profile/<username>', methods=['GET'])
+def get_public_profile(username):
+    return User().get_public_profile(username)
+
+@user_bp.route('/search', methods=['GET'])
+def search_users():
+    query = request.args.get("q", "")
+    return User().search_users(query)

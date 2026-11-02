@@ -43,7 +43,7 @@ def delete_comment(post_id, comment_id):
     return Comment().delete_comment(post_id, comment_id, user_email)
 
 @comment_bp.route('/react/<post_id>/<action>', methods=['POST'])
-def react_to_post(post_id, action, user_email):
+def react_to_post(post_id, action):
     user_email = request.headers.get("User-Email")
     return Comment().react_to_post(post_id, action, user_email)
 
