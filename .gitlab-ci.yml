@@ -1,0 +1,24 @@
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - when: never
+
+stages:
+  - validate
+
+frontend-build:
+  stage: validate
+  image: node:22-alpine
+  script:
+    - cd frontend
+    - npm ci
+    - npm run build
+
+backend-tests:
+  stage: validate
+  image: python:3.10-slim
+  script:
+    - python -m pip install -r backend/requirements.txt
+    - test -f backend/tests/test_nicknames.py
+    - python -m unittest discover -s backend/tests -p "test_*.py" -v
